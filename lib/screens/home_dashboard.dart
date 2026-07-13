@@ -40,39 +40,33 @@ class HomeDashboard extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
 
             // Operations Status Card
-            const AppCard(
-              child: Row(
+           AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _OpsStat(
-                      label: 'Total Pit Lines',
-                      value: '${MockData.totalPitLines}',
-                      icon: Icons.dashboard_rounded,
-                      color: AppColors.primary,
-                    ),
+                  const SectionHeader(
+                    title: 'Operations Status',
                   ),
-                  _VDivider(),
-                  Expanded(
-                    child: _OpsStat(
-                      label: 'Active',
-                      value: '${MockData.activePitLines}',
-                      icon: Icons.radar_rounded,
-                      color: AppColors.warning,
-                    ),
+            
+                  const SizedBox(height: AppSpacing.lg),
+            
+                  const StatusChip(
+                    label: 'Inspection Running',
+                    color: AppColors.success,
+                    background: AppColors.successTint,
+                    icon: Icons.play_circle,
                   ),
-                  _VDivider(),
-                  Expanded(
-                    child: _OpsStat(
-                      label: 'Available',
-                      value: '${MockData.availablePitLines}',
-                      icon: Icons.check_circle_rounded,
-                      color: AppColors.success,
-                    ),
+            
+                  const SizedBox(height: AppSpacing.md),
+            
+                  Text(
+                    'Pit Line 1 is inspecting Train 12951.',
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ],
               ),
             ),
-
+           
             const SizedBox(height: AppSpacing.xxl),
             const SectionHeader(title: 'Live Pit Line Activity'),
             const SizedBox(height: AppSpacing.md),
@@ -102,7 +96,7 @@ class HomeDashboard extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: AppSpacing.md,
               crossAxisSpacing: AppSpacing.md,
-              childAspectRatio: 1.5,
+              childAspectRatio: 2.2,
               children: const [
                 StatTile(
                   label: 'Trains',
@@ -111,16 +105,16 @@ class HomeDashboard extends StatelessWidget {
                   color: AppColors.primary,
                 ),
                 StatTile(
-                  label: 'Issues',
+                  label: 'Defects',
                   value: '${MockData.todayIssues}',
                   icon: Icons.report_problem_rounded,
                   color: AppColors.warning,
                 ),
                 StatTile(
-                  label: 'Critical',
-                  value: '${MockData.todayCritical}',
-                  icon: Icons.error_rounded,
-                  color: AppColors.critical,
+                  label: 'Bio Tanks',
+                  value: '${MockData.todayBioTanks}',
+                  icon: Icons.plumbing_rounded,
+                  color: AppColors.primary,
                 ),
                 StatTile(
                   label: 'Completed',
@@ -249,22 +243,22 @@ class _ActivePitLineCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _InfoBit(
-                  label: 'Train',
+                  label: 'Train No.',
                   value: inspection.trainNumber ?? 'Unknown',
                 ),
               ),
               Expanded(
                 child: _InfoBit(
-                  label: 'Start Time',
+                  label: 'Started',
                   value: inspection.startTime.format(context),
                 ),
               ),
               Expanded(
                 child: _InfoBit(
-                  label: 'Issues',
+                  label: 'Defects',
                   value: '${inspection.issueCount}',
                   valueColor:
-                      inspection.issueCount > 0 ? AppColors.warning : null,
+                      inspection.issueCount > 0 ? AppColors.warning : AppColors.success,
                 ),
               ),
             ],
@@ -273,8 +267,11 @@ class _ActivePitLineCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Coach Progress', style: Theme.of(context).textTheme.labelSmall),
-              Text(
+                Text(
+                    'Inspection Progress',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),  
+                Text(
                 '${inspection.coachesDetected}/${inspection.coachesTotal}',
                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
               ),
@@ -282,7 +279,7 @@ class _ActivePitLineCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           AppProgressBar(value: progress, color: status.color),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.xl),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -300,8 +297,7 @@ class _ActivePitLineCard extends StatelessWidget {
                     : Icons.arrow_forward_rounded,
                 size: 18,
               ),
-              label: Text(
-                status == PitLineStatus.completed ? 'View Details' : 'Continue',
+              label: Text( status == PitLineStatus.completed ? 'View Report': 'View Inspection',
               ),
             ),
           ),

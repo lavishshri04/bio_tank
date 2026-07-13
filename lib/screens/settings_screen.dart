@@ -10,7 +10,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notifications = true;
   bool _autoRefresh = true;
 
   @override
@@ -51,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 12),
                   const _StatusLine(label: 'Camera Network', value: 'Online', good: true),
                   const SizedBox(height: 12),
-                  const _StatusLine(label: 'Train Data Sync', value: 'Online', good: true),
+                  const _StatusLine(label: 'Backend Connection', value: 'moke data', good: true),
                 ],
               ),
             ),
@@ -64,17 +63,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   _SwitchTile(
-                    icon: Icons.notifications_rounded,
-                    label: 'Notifications',
-                    subtitle: 'Alerts for critical issues and completions',
-                    value: _notifications,
-                    onChanged: (v) => setState(() => _notifications = v),
-                  ),
-                  const Divider(height: 1),
-                  _SwitchTile(
                     icon: Icons.sync_rounded,
                     label: 'Auto Refresh',
-                    subtitle: 'Live-update pit line activity every 10s',
+                    subtitle: 'Refresh inspection status automatically',
                     value: _autoRefresh,
                     onChanged: (v) => setState(() => _autoRefresh = v),
                   ),
@@ -91,10 +82,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _NavTile(
                     icon: Icons.info_outline_rounded,
-                    label: 'About Project',
+                    label: 'About Application',
                     onTap: () => _showInfoSheet(
                       context,
-                      'About Project',
+                      'About Application',
                       'The AI Railway Bio-Toilet Inspection System uses computer vision '
                           'to inspect bio-toilet discharge pipes and tanks on train coaches '
                           'as they pass through maintenance pit lines, flagging missing, '
@@ -104,22 +95,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1, indent: 52),
                   _NavTile(
                     icon: Icons.support_agent_rounded,
-                    label: 'Support',
+                    label: 'Technical Support',
                     onTap: () => _showInfoSheet(
                       context,
                       'Support',
-                      'For technical assistance, contact the Railway Maintenance IT '
-                          'helpdesk at support@railbio-inspect.gov.in or extension 4471.',
+                      'For technical assistance, please contact the system administrator or the project development team.',
                     ),
                   ),
                   const Divider(height: 1, indent: 52),
                   const _NavTile(
                     icon: Icons.description_outlined,
                     label: 'App Version',
-                    trailing: 'v2.4.1 (Build 118)',
+                    trailing: 'v1.0.0 Prototype',
                     onTap: null,
                   ),
                 ],
+              ),
+            ),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'AI Railway Bio-Toilet Inspection System\nVersion 1.0.0 Prototype',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xxl),

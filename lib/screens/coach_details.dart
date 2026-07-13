@@ -39,7 +39,7 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Coach Inspection Report'),
+        title: const Text('Coach Inspection Details'),
       ),
       body: SafeArea(
         child: ListView(
@@ -86,10 +86,8 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
                       children: [
                         Text(
                           s == Severity.clean
-                              ? 'No Issues Detected'
-                              : s == Severity.warning
-                                  ? 'Minor Issues Detected'
-                                  : 'Critical Issues Detected',
+                              ? 'No Defects Detected'
+                              : 'Defects Detected',
                           style: TextStyle(
                             color: s.color,
                             fontWeight: FontWeight.w800,
@@ -98,7 +96,7 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Overall AI confidence: ${coach.confidence}%',
+                          'Detection confidence: ${coach.confidence}%',
                           style: TextStyle(color: s.color, fontSize: 12),
                         ),
                       ],
@@ -132,7 +130,7 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
 
             if (coach.findings.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xxl),
-              const SectionHeader(title: 'AI Findings'),
+              const SectionHeader(title: 'Inspection Findings'),
               const SizedBox(height: AppSpacing.md),
               AppCard(
                 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -147,57 +145,6 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
               ),
             ],
 
-            const SizedBox(height: AppSpacing.xxl),
-            const SectionHeader(title: 'Inspection Media'),
-            const SizedBox(height: AppSpacing.md),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.image_rounded, size: 18, color: AppColors.primary),
-                      SizedBox(width: 8),
-                      Text('Inspection Images (AI Overlay)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 88,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: 4,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (context, i) => _MediaThumb(
-                        icon: Icons.camera_alt_rounded,
-                        label: 'CAM ${i + 1}',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  const Row(
-                    children: [
-                      Icon(Icons.videocam_rounded, size: 18, color: AppColors.primary),
-                      SizedBox(width: 8),
-                      Text('Inspection Video', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    height: 140,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.play_circle_fill_rounded,
-                          size: 44, color: AppColors.primary),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
             const SizedBox(height: AppSpacing.xxl),
             const SectionHeader(title: 'Recommended Maintenance'),
@@ -211,24 +158,6 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
               ),
             ),
 
-            const SizedBox(height: AppSpacing.xxl),
-            const SectionHeader(title: 'AI Remarks'),
-            const SizedBox(height: AppSpacing.md),
-            AppCard(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.smart_toy_rounded, size: 18, color: AppColors.primary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      coach.aiRemarks.isEmpty ? 'No remarks generated.' : coach.aiRemarks,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
             const SizedBox(height: AppSpacing.xxl),
             Row(

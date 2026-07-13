@@ -12,7 +12,7 @@ extension SeverityX on Severity {
       case Severity.warning:
         return AppColors.warning;
       case Severity.critical:
-        return AppColors.critical;
+        return AppColors.warning;
     }
   }
 
@@ -32,9 +32,9 @@ extension SeverityX on Severity {
       case Severity.clean:
         return 'Clean';
       case Severity.warning:
-        return 'Warning';
+        return 'Defect';
       case Severity.critical:
-        return 'Critical';
+        return 'Defect';
     }
   }
 }

@@ -32,8 +32,9 @@ class _CoachListScreenState extends State<CoachListScreen> {
       final matchesQuery =
           _query.isEmpty || code.toLowerCase().contains(_query.toLowerCase());
       final matchesFilter = switch (_filter) {
-        'Critical' => coach.severity == Severity.critical,
-        'Warning' => coach.severity == Severity.warning,
+        'Defects' =>
+            coach.severity == Severity.warning ||
+            coach.severity == Severity.critical,
         'Clean' => coach.severity == Severity.clean,
         _ => true,
       };
@@ -59,7 +60,7 @@ class _CoachListScreenState extends State<CoachListScreen> {
                   SearchFilterBar(
                     hint: 'Search coach number',
                     onChanged: (v) => setState(() => _query = v),
-                    filters: const ['All', 'Critical', 'Warning', 'Clean'],
+                    filters: const ['All', 'Defects', 'Clean'],
                     selectedFilter: _filter,
                     onFilterSelected: (f) => setState(() => _filter = f),
                   ),
@@ -139,14 +140,25 @@ class _CoachCard extends StatelessWidget {
                     children: [
                       Text(coach.coachNumber,
                           style: Theme.of(context).textTheme.titleMedium),
-                      Text(coach.coachType,
-                          style: Theme.of(context).textTheme.bodyMedium),
+                      Text(
+                        coach.coachNumber == 'ENGINE'
+                            ? 'Locomotive • No Bio-Toilet'
+                            : coach.coachType,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ],
                   ),
                 ],
               ),
-              StatusChip(label: s.label, color: s.color, background: s.tint),
-            ],
+              StatusChip(
+                label: coach.coachNumber == 'ENGINE' ? 'N/A' : s.label,
+                color: coach.coachNumber == 'ENGINE'
+                    ? Colors.grey
+                    : s.color,
+                background: coach.coachNumber == 'ENGINE'
+                    ? Colors.grey.shade200
+                    : s.tint,
+              ),            ],
           ),
           const SizedBox(height: AppSpacing.md),
           Row(

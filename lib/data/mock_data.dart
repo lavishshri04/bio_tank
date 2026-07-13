@@ -37,7 +37,7 @@ class MockData {
     ),
     const PitLineInspection(
       pitLineNo: 'PL-05',
-      status: PitLineStatus.mapping,
+      status: PitLineStatus.completed,
       trainNumber: '12951',
       trainName: 'Mumbai Rajdhani Express',
       startTime: TimeOfDay(hour: 9, minute: 20),
@@ -52,7 +52,7 @@ class MockData {
 
   static const int todayTrains = 9;
   static const int todayIssues = 21;
-  static const int todayCritical = 4;
+  static const int todayBioTanks = 72;
   static const int todayCompleted = 6;
 
   static final List<ActivityEvent> recentActivity = [
@@ -64,11 +64,11 @@ class MockData {
       color: Color(0xFF16A34A),
     ),
     const ActivityEvent(
-      title: 'Critical issue flagged',
-      subtitle: 'Coach B4 · Missing bio-tank pipe',
+      title: 'Defect detected',
+      subtitle: 'Coach B4 · Pipe Not Connected',
       time: '08:20 AM',
-      icon: Icons.error_rounded,
-      color: Color(0xFFDC2626),
+      icon: Icons.report_problem_rounded,
+      color: Color(0xFFF59E0B),
     ),
     const ActivityEvent(
       title: 'PL-05 mapping started',
