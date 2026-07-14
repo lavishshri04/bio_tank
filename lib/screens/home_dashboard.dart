@@ -6,9 +6,18 @@ import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import 'inspection_details.dart';
 
-class HomeDashboard extends StatelessWidget {
+import '../repositories/dashboard/dashboard_repository.dart';
+
+class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
 
+  @override
+  State<HomeDashboard> createState() => _HomeDashboardState();
+}
+
+class _HomeDashboardState extends State<HomeDashboard> {
+  final DashboardRepository _repository = DashboardRepository();
+  
   @override
   Widget build(BuildContext context) {
     final hasActive = MockData.activeInspections.isNotEmpty;
@@ -144,6 +153,26 @@ class HomeDashboard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _testApi();
+  }
+  Future<void> _testApi() async {
+    try {
+      final summary = await _repository.getDashboardSummary();
+  
+      debugPrint('========================');
+      debugPrint('Trains: ${summary.today.trainsInspected}');
+      debugPrint('Bio Tanks: ${summary.today.bioTanksInspected}');
+      debugPrint('Defects: ${summary.today.defectsFound}');
+      debugPrint('Completed: ${summary.today.completedInspections}');
+      debugPrint('========================');
+    } catch (e) {
+      debugPrint('API ERROR: $e');
+    }
   }
 }
 
