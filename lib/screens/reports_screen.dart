@@ -3,9 +3,23 @@ import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import '../utils/pdf_export.dart';
 
-class ReportsScreen extends StatelessWidget {
+import '../repositories/report/report_repository.dart';
+import '../models/report/report_dashboard_model.dart';
+import '../models/report/common_defect_model.dart';
+import '../services/pdf_download_service.dart';
+
+class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
+  @override
+  State<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  final ReportRepository _repository = ReportRepository();
+
+  ReportDashboardModel? _dashboard;
+  List<CommonDefectModel> _commonDefects = [];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,35 +41,35 @@ class ReportsScreen extends StatelessWidget {
           children: [
             const SectionHeader(title: "Today's Summary"),
             const SizedBox(height: AppSpacing.md),
-            const Row(
+             Row(
               children: [
-                Expanded(child: _SummaryCard(label: 'Trains Inspected', value: '9', icon: Icons.train_rounded, color: AppColors.primary)),
+                Expanded(child: _SummaryCard(label: 'Trains Inspected', value: '${_dashboard?.today.trainsInspected ?? 0}', icon: Icons.train_rounded, color: AppColors.primary)),
                 SizedBox(width: AppSpacing.md),
-                Expanded(child: _SummaryCard(  label: 'Defects Found',  value: '21',  icon: Icons.report_problem_rounded,  color: AppColors.warning,)),
+                Expanded(child: _SummaryCard(  label: 'Defects Found',  value: '${_dashboard?.today.totalDefects ?? 0}',  icon: Icons.report_problem_rounded,  color: AppColors.warning,)),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            const Row(
+             Row(
               children: [
-                Expanded(  child: _SummaryCard(    label: 'Bio Tanks Inspected',    value: '72',    icon: Icons.plumbing_rounded,    color: AppColors.primary,  ),),
+                Expanded(  child: _SummaryCard(    label: 'Bio Tanks Inspected',    value: '${_dashboard?.today.bioTanksInspected ?? 0}',    icon: Icons.plumbing_rounded,    color: AppColors.primary,  ),),
                 SizedBox(width: AppSpacing.md),
-                Expanded(child: _SummaryCard(label: 'Completed', value: '6', icon: Icons.check_circle_rounded, color: AppColors.success)),
+                Expanded(child: _SummaryCard(label: 'Completed', value: '${_dashboard?.today.completed ?? 0}', icon: Icons.check_circle_rounded, color: AppColors.success)),
               ],
             ),
 
             const SizedBox(height: AppSpacing.xxl),
             const SectionHeader(title: 'Weekly Summary'),
             const SizedBox(height: AppSpacing.md),
-            const AppCard(
+             AppCard(
               child: Column(
                 children: [
-                  _RowStat(label: 'Trains Inspected', value: '58'),
+                  _RowStat(label: 'Trains Inspected', value: '${_dashboard?.weekly.trainsInspected ?? 0}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Total Defects', value: '146'),
+                  _RowStat(label: 'Total Defects', value: '${_dashboard?.weekly.totalDefects ?? 0}'),
                   Divider(height: 20),
-                 _RowStat(label: 'Coaches Inspected', value: '232'),
+                 _RowStat(label: 'Coaches Inspected', value: '${_dashboard?.weekly.coachesInspected ?? 0}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Bio Tanks Inspected', value: '928'),
+                  _RowStat(label: 'Bio Tanks Inspected', value: '${_dashboard?.weekly.bioTanksInspected ?? 0}'),
                 ],
               ),
             ),
@@ -63,16 +77,16 @@ class ReportsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xxl),
             const SectionHeader(title: 'Monthly Summary'),
             const SizedBox(height: AppSpacing.md),
-            const AppCard(
+             AppCard(
               child: Column(
                 children: [
-                  _RowStat(label: 'Trains Inspected', value: '241'),
+                  _RowStat(label: 'Trains Inspected', value: '${_dashboard?.monthly.trainsInspected ?? 0}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Total Defects', value: '612'),
+                  _RowStat(label: 'Total Defects', value: '${_dashboard?.monthly.totalDefects ?? 0}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Coaches Inspected', value: '964'),
+                  _RowStat(label: 'Coaches Inspected', value: '${_dashboard?.monthly.coachesInspected ?? 0}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Bio Tanks Inspected', value: '3856'),
+                  _RowStat(label: 'Bio Tanks Inspected',value: '${_dashboard?.monthly.bioTanksInspected ?? 0}'),
                 ],
               ),
             ),
@@ -82,27 +96,29 @@ class ReportsScreen extends StatelessWidget {
             const SectionHeader(title: 'Most Common Defects'),
             
             const SizedBox(height: AppSpacing.md),
-            
-            const AppCard(
+                        
+            AppCard(
               child: Column(
-                children: [
-                  _RowStat(
-                    label: 'Pipe Not Connected',
-                    value: '42',
-                  ),
-                  Divider(height: 20),
-                  _RowStat(
-                    label: 'Pipe Support Absent',
-                    value: '31',
-                  ),
-                  Divider(height: 20),
-                  _RowStat(
-                    label: 'Surface Not Clean',
-                    value: '18',
-                  ),
-                ],
+                children: List.generate(
+                  _commonDefects.length,
+                  (index) {
+                    final defect = _commonDefects[index];
+            
+                    return Column(
+                      children: [
+                        _RowStat(
+                          label: defect.displayName,
+                          value: '${defect.count}',
+                        ),
+                        if (index != _commonDefects.length - 1)
+                          const Divider(height: 20),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
+            
             const SizedBox(height: AppSpacing.xxl),
             
             const SectionHeader(title: 'Export Reports'),
@@ -140,6 +156,37 @@ class ReportsScreen extends StatelessWidget {
       ),
     );
   }
+
+@override
+void initState() {
+  super.initState();
+
+  _loadReports();
+  _loadCommonDefects();
+}  
+  Future<void> _loadReports() async {
+  try {
+    final dashboard = await _repository.getDashboard();
+
+    setState(() {
+      _dashboard = dashboard;
+    });
+  } catch (e) {
+    debugPrint('REPORT DASHBOARD ERROR: $e');
+  }
+}
+
+Future<void> _loadCommonDefects() async {
+  try {
+    final defects = await _repository.getCommonDefects();
+
+    setState(() {
+      _commonDefects = defects;
+    });
+  } catch (e) {
+    debugPrint('COMMON DEFECT ERROR: $e');
+  }
+}
 }
 
 class _SummaryCard extends StatelessWidget {

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
+import 'package:flutter/material.dart';
+import 'dashboard/live_pitline_model.dart';
+import 'package:intl/intl.dart';
+import 'inspection/inspection_model.dart';
+
+
 /// Overall severity used across chips, cards and coach health indicators.
 enum Severity { clean, warning, critical }
 
@@ -146,6 +152,34 @@ class PitLineInspection {
     required this.durationMinutes,
     this.issueTally = const IssueTally(),
   });
+factory PitLineInspection.fromApi(LivePitLine api) {
+  return PitLineInspection(
+    pitLineNo: api.pitLine,
+
+    status: switch (api.status) {
+      'PENDING' => PitLineStatus.scanning,
+      'PROCESSING' => PitLineStatus.mapping,
+      'COMPLETED' => PitLineStatus.completed,
+      'FAILED' => PitLineStatus.scanning,
+      _ => PitLineStatus.scanning,
+    },
+
+    trainNumber: api.trainNumber,
+    trainName: null,
+
+    startTime: TimeOfDay.fromDateTime(
+      DateTime.parse(api.startedAt).toLocal(),
+    ),
+
+    coachesDetected: api.inspectedCoaches,
+    coachesTotal: api.totalCoaches,
+    issueCount: api.defects,
+
+    // Backend doesn't send these yet
+    inspectionId: '',
+    durationMinutes: 0,
+  );
+}
 }
 
 class PipeFinding {
@@ -187,6 +221,7 @@ class CoachRecord {
 }
 
 class InspectionHistoryItem {
+  final String inspectionId;
   final String trainNumber;
   final String trainName;
   final String date;
@@ -195,6 +230,7 @@ class InspectionHistoryItem {
   final int issueCount;
 
   const InspectionHistoryItem({
+    required this.inspectionId,
     required this.trainNumber,
     required this.trainName,
     required this.date,
@@ -202,6 +238,21 @@ class InspectionHistoryItem {
     required this.status,
     required this.issueCount,
   });
+
+  factory InspectionHistoryItem.fromApi(InspectionModel api) {
+    return InspectionHistoryItem(
+      inspectionId: api.inspectionId,
+      trainNumber: api.trainNumber,
+      trainName: api.trainName,
+      date: DateFormat('dd MMM yyyy, hh:mm a')
+          .format(api.inspectionTime.toLocal()),
+      pitLine: api.pitLine,
+      issueCount: api.issueCount,
+      status: api.status == 'COMPLETED'
+          ? InspectionHistoryStatus.completed
+          : InspectionHistoryStatus.pending,
+    );
+  }
 }
 
 class ActivityEvent {

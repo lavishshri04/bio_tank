@@ -2,7 +2,7 @@ class ApiEndpoints {
   ApiEndpoints._();
 
   /// Local backend
-    static const String baseUrl = 'http://127.0.0.1:8000/api/v1';
+  static const baseUrl = "http://192.168.1.8:8000/api/v1";
   // Dashboard
   static const String dashboardSummary = '/dashboard/summary/';
   static const String dashboardStatus = '/dashboard/status/';

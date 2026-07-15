@@ -5,6 +5,9 @@ import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import 'inspection_details.dart';
 
+import '../repositories/inspection/inspection_repository.dart';
+import '../models/inspection/inspection_list_model.dart';
+
 class InspectionsHistoryScreen extends StatefulWidget {
   const InspectionsHistoryScreen({super.key});
 
@@ -17,20 +20,16 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
   String _query = '';
   String _filter = 'All';
 
+  final InspectionRepository _repository = InspectionRepository();
+  
+  InspectionListModel? _inspectionList;
+  bool _isLoading = true;
+  
   @override
   Widget build(BuildContext context) {
-    final items = MockData.history.where((item) {
-      final matchesQuery = _query.isEmpty ||
-          item.trainNumber.contains(_query) ||
-          item.trainName.toLowerCase().contains(_query.toLowerCase());
-      final matchesFilter = switch (_filter) {
-        'Pending' => item.status == InspectionHistoryStatus.pending,
-        'Completed' => item.status == InspectionHistoryStatus.completed,
-        _ => true,
-      };
-      return matchesQuery && matchesFilter;
-    }).toList();
-
+    final items = (_inspectionList?.results ?? [])
+    .map((e) => InspectionHistoryItem.fromApi(e))
+    .toList();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Inspections')),
@@ -48,7 +47,11 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
               ),
             ),
             Expanded(
-              child: ListView.separated(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                 itemCount: items.length,
                 separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
@@ -149,6 +152,29 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
       ),
     );
   }
+
+@override
+void initState() {
+  super.initState();
+  _loadInspections();
+}
+
+Future<void> _loadInspections() async {
+  try {
+    final inspections = await _repository.getInspections();
+
+    setState(() {
+      _inspectionList = inspections;
+      _isLoading = false;
+    });
+  } catch (e) {
+    debugPrint('INSPECTION LIST ERROR: $e');
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
 }
 
 class _MetaChip extends StatelessWidget {

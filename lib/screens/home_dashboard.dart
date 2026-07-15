@@ -8,6 +8,11 @@ import 'inspection_details.dart';
 
 import '../repositories/dashboard/dashboard_repository.dart';
 
+import '../models/dashboard/dashboard_summary_model.dart';
+import '../models/dashboard/dashboard_status_model.dart';
+import '../models/dashboard/live_pitline_model.dart';
+import '../models/dashboard/recent_activity_model.dart';
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
 
@@ -17,10 +22,21 @@ class HomeDashboard extends StatefulWidget {
 
 class _HomeDashboardState extends State<HomeDashboard> {
   final DashboardRepository _repository = DashboardRepository();
-  
+  DashboardSummaryModel? _dashboardSummary;
+  DashboardStatusModel? _dashboardStatus;
+  LivePitLinesModel? _livePitLines;
+  RecentActivityModel? _recentActivity;
+
   @override
   Widget build(BuildContext context) {
-    final hasActive = MockData.activeInspections.isNotEmpty;
+    final activeInspections =
+        _livePitLines?.pitLines
+            .map(PitLineInspection.fromApi)
+            .toList() ??
+        MockData.activeInspections;
+    
+    final hasActive = activeInspections.isNotEmpty;
+
     final today = DateFormat('EEE, d MMM yyyy').format(DateTime.now());
 
     return Scaffold(
@@ -59,8 +75,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
             
                   const SizedBox(height: AppSpacing.lg),
             
-                  const StatusChip(
-                    label: 'Inspection Running',
+                  StatusChip(
+                    label: _dashboardStatus?.status == 'PROCESSING'
+                        ? 'Inspection Running'
+                        : 'Idle',
                     color: AppColors.success,
                     background: AppColors.successTint,
                     icon: Icons.play_circle,
@@ -69,7 +87,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   const SizedBox(height: AppSpacing.md),
             
                   Text(
-                    'Pit Line 1 is inspecting Train 12951.',
+                    _dashboardStatus?.message ?? 'Waiting for backend...',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ],
@@ -89,7 +107,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 ),
               )
             else
-              ...MockData.activeInspections.map(
+              ...activeInspections.map(
                 (i) => Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: _ActivePitLineCard(inspection: i),
@@ -106,28 +124,28 @@ class _HomeDashboardState extends State<HomeDashboard> {
               mainAxisSpacing: AppSpacing.md,
               crossAxisSpacing: AppSpacing.md,
               childAspectRatio: 2.2,
-              children: const [
+              children:  [
                 StatTile(
                   label: 'Trains',
-                  value: '${MockData.todayTrains}',
+                 value: '${_dashboardSummary?.today.trainsInspected ?? MockData.todayTrains}',
                   icon: Icons.train_rounded,
                   color: AppColors.primary,
                 ),
                 StatTile(
                   label: 'Defects',
-                  value: '${MockData.todayIssues}',
+                  value: '${_dashboardSummary?.today.defectsFound ?? MockData.todayIssues}',
                   icon: Icons.report_problem_rounded,
                   color: AppColors.warning,
                 ),
                 StatTile(
                   label: 'Bio Tanks',
-                  value: '${MockData.todayBioTanks}',
+                 value: '${_dashboardSummary?.today.bioTanksInspected ?? MockData.todayBioTanks}',
                   icon: Icons.plumbing_rounded,
                   color: AppColors.primary,
                 ),
                 StatTile(
                   label: 'Completed',
-                  value: '${MockData.todayCompleted}',
+                  value: '${_dashboardSummary?.today.completedInspections ?? MockData.todayCompleted}',
                   icon: Icons.check_circle_rounded,
                   color: AppColors.success,
                 ),
@@ -156,24 +174,73 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _testApi();
+ @override
+void initState() {
+  super.initState();
+
+  _loadDashboardSummary();
+  _loadDashboardStatus();
+  _loadLivePitLines();
+  _loadRecentActivity();
+}
+
+Future<void> _loadDashboardSummary() async {
+  try {
+    final summary = await _repository.getDashboardSummary();
+
+    setState(() {
+      _dashboardSummary = summary;
+    });
+
+    debugPrint('Dashboard Summary Loaded');
+  } catch (e) {
+    debugPrint('API ERROR: $e');
   }
-  Future<void> _testApi() async {
-    try {
-      final summary = await _repository.getDashboardSummary();
-  
-      debugPrint('========================');
-      debugPrint('Trains: ${summary.today.trainsInspected}');
-      debugPrint('Bio Tanks: ${summary.today.bioTanksInspected}');
-      debugPrint('Defects: ${summary.today.defectsFound}');
-      debugPrint('Completed: ${summary.today.completedInspections}');
-      debugPrint('========================');
-    } catch (e) {
-      debugPrint('API ERROR: $e');
-    }
+}
+
+Future<void> _loadDashboardStatus() async {
+  try {
+    final status = await _repository.getDashboardStatus();
+
+    setState(() {
+      _dashboardStatus = status;
+    });
+
+    debugPrint('Dashboard Status Loaded');
+  } catch (e) {
+    debugPrint('STATUS API ERROR: $e');
   }
+}
+
+Future<void> _loadLivePitLines() async {
+  try {
+    final pitLines = await _repository.getLivePitLines();
+
+    setState(() {
+      _livePitLines = pitLines;
+    });
+
+    debugPrint('Live Pit Lines Loaded');
+  } catch (e) {
+    debugPrint('LIVE PITLINES API ERROR: $e');
+  }
+}
+Future<void> _loadRecentActivity() async {
+  try {
+    final activity = await _repository.getRecentActivity();
+
+    setState(() {
+      _recentActivity = activity;
+    });
+
+    debugPrint(
+      'Recent Activities: ${activity.activities.length}',
+    );
+  } catch (e) {
+    debugPrint('RECENT ACTIVITY API ERROR: $e');
+  }
+}
+
 }
 
 class _VDivider extends StatelessWidget {
