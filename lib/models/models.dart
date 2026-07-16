@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'dashboard/live_pitline_model.dart';
 import 'package:intl/intl.dart';
 import 'inspection/inspection_model.dart';
+import 'inspection/inspection_detail_model.dart';
+import 'coach/coach_list_model.dart';
 
 
 /// Overall severity used across chips, cards and coach health indicators.
@@ -152,34 +154,62 @@ class PitLineInspection {
     required this.durationMinutes,
     this.issueTally = const IssueTally(),
   });
-factory PitLineInspection.fromApi(LivePitLine api) {
-  return PitLineInspection(
-    pitLineNo: api.pitLine,
 
-    status: switch (api.status) {
-      'PENDING' => PitLineStatus.scanning,
-      'PROCESSING' => PitLineStatus.mapping,
-      'COMPLETED' => PitLineStatus.completed,
-      'FAILED' => PitLineStatus.scanning,
-      _ => PitLineStatus.scanning,
-    },
+  // Used by Dashboard
+  factory PitLineInspection.fromApi(LivePitLine api) {
+    return PitLineInspection(
+      pitLineNo: api.pitLine,
+      status: switch (api.status) {
+        'AWAITING_TRAIN_NUMBER' => PitLineStatus.awaitingTrainNumber,
+        'MAPPING' => PitLineStatus.mapping,
+        'PROCESSING' => PitLineStatus.mapping,
+        'COMPLETED' => PitLineStatus.completed,
+        'FAILED' => PitLineStatus.scanning,
+        _ => PitLineStatus.scanning,
+      },
+      trainNumber: api.trainNumber,
+      trainName: null,
+      startTime: TimeOfDay.fromDateTime(
+        DateTime.parse(api.startedAt).toLocal(),
+      ),
+      coachesDetected: api.inspectedCoaches,
+      coachesTotal: api.totalCoaches,
+      issueCount: api.defects,
+      inspectionId: '',
+      durationMinutes: 0,
+    );
+  }
 
-    trainNumber: api.trainNumber,
-    trainName: null,
-
-    startTime: TimeOfDay.fromDateTime(
-      DateTime.parse(api.startedAt).toLocal(),
-    ),
-
-    coachesDetected: api.inspectedCoaches,
-    coachesTotal: api.totalCoaches,
-    issueCount: api.defects,
-
-    // Backend doesn't send these yet
-    inspectionId: '',
-    durationMinutes: 0,
-  );
-}
+  // Used by Inspection Details
+  factory PitLineInspection.fromInspectionDetail(
+    InspectionDetailModel api,
+  ) {
+    return PitLineInspection(
+      pitLineNo: api.pitLine,
+      status: switch (api.status) {
+        'AWAITING_TRAIN_NUMBER' => PitLineStatus.awaitingTrainNumber,
+        'MAPPING' => PitLineStatus.mapping,
+        'COMPLETED' => PitLineStatus.completed,
+        'FAILED' => PitLineStatus.scanning,
+        _ => PitLineStatus.scanning,
+      },
+      trainNumber: api.train.number,
+      trainName: api.train.name,
+      startTime: TimeOfDay.fromDateTime(
+        api.inspection.startedAt.toLocal(),
+      ),
+      coachesDetected: api.inspection.coachesDetected,
+      coachesTotal: api.inspection.totalCoaches,
+      issueCount: api.inspection.totalDefects,
+      inspectionId: api.inspectionId,
+      durationMinutes: api.inspection.durationMinutes,
+      issueTally: IssueTally(
+        missingPipe: api.defectSummary.pipeNotConnected,
+        loosePipe: api.defectSummary.pipeSupportAbsent,
+        dirtyTank: api.defectSummary.surfaceNotClean,
+      ),
+    );
+  }
 }
 
 class PipeFinding {
@@ -197,6 +227,7 @@ class PipeFinding {
 }
 
 class CoachRecord {
+  final String coachId;
   final String coachNumber;
   final String coachType;
   final Severity severity;
@@ -208,6 +239,7 @@ class CoachRecord {
   final String recommendedMaintenance;
 
   const CoachRecord({
+    required this.coachId,
     required this.coachNumber,
     required this.coachType,
     required this.severity,
@@ -218,6 +250,30 @@ class CoachRecord {
     this.aiRemarks = '',
     this.recommendedMaintenance = '',
   });
+
+  factory CoachRecord.fromApi(CoachModel api) {
+  Severity mapSeverity(String status) {
+    switch (status) {
+      case 'CLEAN':
+        return Severity.clean;
+      case 'DEFECT':
+        return Severity.warning;
+      default:
+        return Severity.clean;
+    }
+  }
+
+  return CoachRecord(
+    coachId: api.coachId,
+    coachNumber: api.coachNumber,
+    coachType: api.coachType,
+    severity: mapSeverity(api.status),
+    leftSide: mapSeverity(api.leftSide),
+    rightSide: mapSeverity(api.rightSide),
+    confidence: api.confidence.round(),
+  );
+}
+
 }
 
 class InspectionHistoryItem {
@@ -242,8 +298,8 @@ class InspectionHistoryItem {
   factory InspectionHistoryItem.fromApi(InspectionModel api) {
     return InspectionHistoryItem(
       inspectionId: api.inspectionId,
-      trainNumber: api.trainNumber,
-      trainName: api.trainName,
+      trainNumber: api.trainNumber ?? 'Not Assigned',
+      trainName: api.trainName ?? 'Unknown Train',
       date: DateFormat('dd MMM yyyy, hh:mm a')
           .format(api.inspectionTime.toLocal()),
       pitLine: api.pitLine,

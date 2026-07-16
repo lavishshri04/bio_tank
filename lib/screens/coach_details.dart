@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import '../data/mock_data.dart';
-import '../models/models.dart';
+
+import '../models/coach/coach_detail_model.dart';
+import '../repositories/coach/coach_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 
 class CoachDetailsScreen extends StatefulWidget {
-  final List<String> coachOrder;
-  final int initialIndex;
+  final String inspectionId;
+  final String coachId;
   final String trainNumber;
 
   const CoachDetailsScreen({
     super.key,
-    required this.coachOrder,
-    required this.initialIndex,
+    required this.inspectionId,
+    required this.coachId,
     required this.trainNumber,
   });
 
@@ -21,182 +22,300 @@ class CoachDetailsScreen extends StatefulWidget {
 }
 
 class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
-  late int _index;
+  late CoachRepository _repository;
+
+  CoachDetailModel? _coach;
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _index = widget.initialIndex;
+    _repository = CoachRepository();
+    _loadCoach();
   }
 
-  CoachRecord get _coach => MockData.coaches[widget.coachOrder[_index]]!;
+  Future<void> _loadCoach() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final coach = await _repository.getCoachDetail(
+        widget.inspectionId,
+        widget.coachId,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _coach = coach;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load coach details. Please try again.';
+        _loading = false;
+      });
+    }
+  }
+
+  void _openCoach(String coachId) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CoachDetailsScreen(
+          inspectionId: widget.inspectionId,
+          coachId: coachId,
+          trainNumber: widget.trainNumber,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final coach = _coach;
-    final s = coach.severity;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Coach Inspection Details'),
       ),
       body: SafeArea(
-        child: ListView(
+        child: _buildBody(context),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
           padding: kScreenPadding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _error!,
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              ElevatedButton.icon(
+                onPressed: _loadCoach,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final coach = _coach!;
+    final status = _statusStyle(coach.coach.status);
+    final previousCoachId = coach.navigation.previous;
+    final nextCoachId = coach.navigation.next;
+
+    return ListView(
+      padding: kScreenPadding,
+      children: [
+        // Header
+        Row(
           children: [
-            // Header
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(coach.coachNumber, style: Theme.of(context).textTheme.headlineSmall),
-                    Text(
-                      '${coach.coachType} · Train ${widget.trainNumber}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+                Text(coach.coach.number,
+                    style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  '${coach.coach.type} - Train ${widget.trainNumber}',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
-                const Spacer(),
-                StatusChip(label: s.label, color: s.color, background: s.tint),
               ],
             ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Large status card
-            AppCard(
-              color: s.tint,
-              border: Border.all(color: s.color.withOpacity(0.25)),
-              child: Row(
-                children: [
-                  Icon(
-                    s == Severity.clean
-                        ? Icons.verified_rounded
-                        : s == Severity.warning
-                            ? Icons.warning_amber_rounded
-                            : Icons.error_rounded,
-                    color: s.color,
-                    size: 36,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s == Severity.clean
-                              ? 'No Defects Detected'
-                              : 'Defects Detected',
-                          style: TextStyle(
-                            color: s.color,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Detection confidence: ${coach.confidence}%',
-                          style: TextStyle(color: s.color, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            const Spacer(),
+            StatusChip(
+              label: _displayStatus(coach.coach.status),
+              color: status.color,
+              background: status.tint,
             ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xl),
 
-            const SizedBox(height: AppSpacing.xxl),
-            const SectionHeader(title: 'Inspection Information'),
-            const SizedBox(height: AppSpacing.md),
-            AppCard(
-              child: Column(
-                children: [
-                  _InfoRow(label: 'Coach Number', value: coach.coachNumber),
-                  const Divider(height: 20),
-                  _InfoRow(label: 'Coach Type', value: coach.coachType),
-                  const Divider(height: 20),
-                  _InfoRow(label: 'Left Side Status', value: coach.leftSide.label, valueColor: coach.leftSide.color),
-                  const Divider(height: 20),
-                  _InfoRow(label: 'Right Side Status', value: coach.rightSide.label, valueColor: coach.rightSide.color),
-                ],
+        // Large status card
+        AppCard(
+          color: status.tint,
+          border: Border.all(color: status.color.withValues(alpha: 0.25)),
+          child: Row(
+            children: [
+              Icon(
+                status.icon,
+                color: status.color,
+                size: 36,
               ),
-            ),
-
-            const SizedBox(height: AppSpacing.xxl),
-            const SectionHeader(title: 'Coach Health Diagram'),
-            const SizedBox(height: AppSpacing.md),
-            AppCard(child: _HealthDiagram(coach: coach)),
-
-            if (coach.findings.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xxl),
-              const SectionHeader(title: 'Inspection Findings'),
-              const SizedBox(height: AppSpacing.md),
-              AppCard(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (int i = 0; i < coach.findings.length; i++) ...[
-                      _FindingTile(finding: coach.findings[i]),
-                      if (i != coach.findings.length - 1) const Divider(height: 1, indent: 16, endIndent: 16),
-                    ],
+                    Text(
+                      status.isClean
+                          ? 'No Defects Detected'
+                          : 'Defects Detected',
+                      style: TextStyle(
+                        color: status.color,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Detection confidence: ${coach.inspection.overallConfidence}%',
+                      style: TextStyle(color: status.color, fontSize: 12),
+                    ),
                   ],
                 ),
               ),
             ],
+          ),
+        ),
 
-
-            const SizedBox(height: AppSpacing.xxl),
-            const SectionHeader(title: 'Recommended Maintenance'),
-            const SizedBox(height: AppSpacing.md),
-            AppCard(
-              child: Text(
-                coach.recommendedMaintenance.isEmpty
-                    ? 'No maintenance action required.'
-                    : coach.recommendedMaintenance,
-                style: Theme.of(context).textTheme.bodyLarge,
+        const SizedBox(height: AppSpacing.xxl),
+        const SectionHeader(title: 'Inspection Information'),
+        const SizedBox(height: AppSpacing.md),
+        AppCard(
+          child: Column(
+            children: [
+              _InfoRow(label: 'Coach Number', value: coach.coach.number),
+              const Divider(height: 20),
+              _InfoRow(label: 'Coach Type', value: coach.coach.type),
+              const Divider(height: 20),
+              _InfoRow(
+                label: 'Left Side Status',
+                value: _displayStatus(coach.inspection.leftStatus),
+                valueColor: _statusStyle(coach.inspection.leftStatus).color,
               ),
-            ),
+              const Divider(height: 20),
+              _InfoRow(
+                label: 'Right Side Status',
+                value: _displayStatus(coach.inspection.rightStatus),
+                valueColor: _statusStyle(coach.inspection.rightStatus).color,
+              ),
+            ],
+          ),
+        ),
 
+        const SizedBox(height: AppSpacing.xxl),
+        const SectionHeader(title: 'Coach Health Diagram'),
+        const SizedBox(height: AppSpacing.md),
+        AppCard(child: _HealthDiagram(healthDiagram: coach.healthDiagram)),
 
-            const SizedBox(height: AppSpacing.xxl),
-            Row(
+        if (coach.findings.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          const SectionHeader(title: 'Inspection Findings'),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _index > 0 ? () => setState(() => _index--) : null,
-                    icon: const Icon(Icons.chevron_left_rounded, size: 20),
-                    label: const Text('Previous'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _index < widget.coachOrder.length - 1
-                        ? () => setState(() => _index++)
-                        : null,
-                    icon: const Icon(Icons.chevron_right_rounded, size: 20),
-                    label: const Text('Next'),
-                  ),
-                ),
+                for (int i = 0; i < coach.findings.length; i++) ...[
+                  _FindingTile(finding: coach.findings[i]),
+                  if (i != coach.findings.length - 1)
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                ],
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Inspection report exported as PDF')),
-                  );
-                },
-                icon: const Icon(Icons.ios_share_rounded, size: 18),
-                label: const Text('Export Inspection Report'),
+          ),
+        ],
+
+        const SizedBox(height: AppSpacing.xxl),
+        const SectionHeader(title: 'Recommended Maintenance'),
+        const SizedBox(height: AppSpacing.md),
+        AppCard(
+          child: coach.maintenance.isEmpty
+              ? Text(
+                  'No maintenance action required.',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final action in coach.maintenance)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('- ', style: TextStyle(fontSize: 14)),
+                            Expanded(
+                              child: Text(
+                                action,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+
+        if (coach.remarks.trim().isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          const SectionHeader(title: 'Remarks'),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            child: Text(
+              coach.remarks,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ],
+
+        const SizedBox(height: AppSpacing.xxl),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: previousCoachId != null
+                    ? () => _openCoach(previousCoachId)
+                    : null,
+                icon: const Icon(Icons.chevron_left_rounded, size: 20),
+                label: const Text('Previous'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed:
+                    nextCoachId != null ? () => _openCoach(nextCoachId) : null,
+                icon: const Icon(Icons.chevron_right_rounded, size: 20),
+                label: const Text('Next'),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: AppSpacing.lg),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Inspection report exported as PDF')),
+              );
+            },
+            icon: const Icon(Icons.ios_share_rounded, size: 18),
+            label: const Text('Export Inspection Report'),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -227,12 +346,12 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _FindingTile extends StatelessWidget {
-  final PipeFinding finding;
+  final Finding finding;
   const _FindingTile({required this.finding});
 
   @override
   Widget build(BuildContext context) {
-    final s = finding.severity;
+    final status = _statusStyle(finding.title);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -240,27 +359,33 @@ class _FindingTile extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(color: s.color, shape: BoxShape.circle),
+            decoration:
+                BoxDecoration(color: status.color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(finding.label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                Text(finding.title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13)),
                 const SizedBox(height: 2),
-                Text(finding.finding, style: Theme.of(context).textTheme.bodyMedium),
+                Text(finding.description,
+                    style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
           ),
           Text('${finding.confidence}%',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
         ],
       ),
     );
   }
 }
 
+// ignore: unused_element
 class _MediaThumb extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -279,7 +404,9 @@ class _MediaThumb extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.primary, size: 22),
           const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -288,20 +415,17 @@ class _MediaThumb extends StatelessWidget {
 
 /// Simple schematic coach diagram highlighting the 4 pipe points + bio tank.
 class _HealthDiagram extends StatelessWidget {
-  final CoachRecord coach;
-  const _HealthDiagram({required this.coach});
-
-  Severity _sevFor(String label) {
-    final f = coach.findings.where((e) => e.label == label);
-    if (f.isNotEmpty) return f.first.severity;
-    // fallback split by side
-    if (label.contains('Left')) return coach.leftSide;
-    if (label.contains('Right')) return coach.rightSide;
-    return coach.severity;
-  }
+  final HealthDiagram healthDiagram;
+  const _HealthDiagram({required this.healthDiagram});
 
   @override
   Widget build(BuildContext context) {
+    final frontLeft = _statusStyle(healthDiagram.frontLeft);
+    final frontRight = _statusStyle(healthDiagram.frontRight);
+    final rearLeft = _statusStyle(healthDiagram.rearLeft);
+    final rearRight = _statusStyle(healthDiagram.rearRight);
+    final bioTank = _statusStyle(healthDiagram.bioTank);
+
     return Column(
       children: [
         Container(
@@ -316,10 +440,16 @@ class _HealthDiagram extends StatelessWidget {
                 child: Icon(Icons.directions_railway_rounded,
                     size: 56, color: AppColors.iconMuted),
               ),
-              Positioned(top: 10, left: 10, child: _Dot(_sevFor('Front Left Pipe'))),
-              Positioned(top: 10, right: 10, child: _Dot(_sevFor('Front Right Pipe'))),
-              Positioned(bottom: 10, left: 10, child: _Dot(_sevFor('Rear Left Pipe'))),
-              Positioned(bottom: 10, right: 10, child: _Dot(_sevFor('Bio Tank'))),
+              Positioned(top: 10, left: 10, child: _Dot(frontLeft)),
+              Positioned(top: 10, right: 10, child: _Dot(frontRight)),
+              Positioned(bottom: 10, left: 10, child: _Dot(rearLeft)),
+              Positioned(bottom: 10, right: 10, child: _Dot(rearRight)),
+              Positioned(
+                bottom: 10,
+                left: 0,
+                right: 0,
+                child: Center(child: _Dot(bioTank)),
+              ),
             ],
           ),
         ),
@@ -328,11 +458,11 @@ class _HealthDiagram extends StatelessWidget {
           spacing: AppSpacing.md,
           runSpacing: AppSpacing.sm,
           children: [
-            _LegendItem(label: 'Front Left Pipe', severity: _sevFor('Front Left Pipe')),
-            _LegendItem(label: 'Front Right Pipe', severity: _sevFor('Front Right Pipe')),
-            _LegendItem(label: 'Rear Left Pipe', severity: _sevFor('Rear Left Pipe')),
-            _LegendItem(label: 'Rear Right Pipe', severity: _sevFor('Rear Right Pipe')),
-            _LegendItem(label: 'Bio Tank', severity: _sevFor('Bio Tank')),
+            _LegendItem(label: 'Front Left Pipe', status: frontLeft),
+            _LegendItem(label: 'Front Right Pipe', status: frontRight),
+            _LegendItem(label: 'Rear Left Pipe', status: rearLeft),
+            _LegendItem(label: 'Rear Right Pipe', status: rearRight),
+            _LegendItem(label: 'Bio Tank', status: bioTank),
           ],
         ),
       ],
@@ -341,8 +471,8 @@ class _HealthDiagram extends StatelessWidget {
 }
 
 class _Dot extends StatelessWidget {
-  final Severity severity;
-  const _Dot(this.severity);
+  final _StatusStyle status;
+  const _Dot(this.status);
 
   @override
   Widget build(BuildContext context) {
@@ -350,10 +480,12 @@ class _Dot extends StatelessWidget {
       width: 16,
       height: 16,
       decoration: BoxDecoration(
-        color: severity.color,
+        color: status.color,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [BoxShadow(color: severity.color.withOpacity(0.4), blurRadius: 6)],
+        boxShadow: [
+          BoxShadow(color: status.color.withValues(alpha: 0.4), blurRadius: 6)
+        ],
       ),
     );
   }
@@ -361,8 +493,8 @@ class _Dot extends StatelessWidget {
 
 class _LegendItem extends StatelessWidget {
   final String label;
-  final Severity severity;
-  const _LegendItem({required this.label, required this.severity});
+  final _StatusStyle status;
+  const _LegendItem({required this.label, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -372,11 +504,68 @@ class _LegendItem extends StatelessWidget {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(color: severity.color, shape: BoxShape.circle),
+          decoration:
+              BoxDecoration(color: status.color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        Text(label,
+            style:
+                const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }
+}
+
+class _StatusStyle {
+  final Color color;
+  final Color tint;
+  final IconData icon;
+  final bool isClean;
+
+  const _StatusStyle({
+    required this.color,
+    required this.tint,
+    required this.icon,
+    required this.isClean,
+  });
+}
+
+_StatusStyle _statusStyle(String status) {
+  final normalized = status.trim().toLowerCase();
+
+  if (normalized == 'clean' ||
+      normalized == 'ok' ||
+      normalized == 'healthy' ||
+      normalized == 'good') {
+    return const _StatusStyle(
+      color: AppColors.success,
+      tint: AppColors.successTint,
+      icon: Icons.verified_rounded,
+      isClean: true,
+    );
+  }
+
+  if (normalized == 'critical' ||
+      normalized == 'fault' ||
+      normalized == 'defective' ||
+      normalized == 'defect') {
+    return const _StatusStyle(
+      color: AppColors.critical,
+      tint: AppColors.criticalTint,
+      icon: Icons.error_rounded,
+      isClean: false,
+    );
+  }
+
+  return const _StatusStyle(
+    color: AppColors.warning,
+    tint: AppColors.warningTint,
+    icon: Icons.warning_amber_rounded,
+    isClean: false,
+  );
+}
+
+String _displayStatus(String status) {
+  final trimmed = status.trim();
+  return trimmed.isEmpty ? 'Unknown' : trimmed;
 }

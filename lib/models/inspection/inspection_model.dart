@@ -1,7 +1,7 @@
 class InspectionModel {
   final String inspectionId;
-  final String trainNumber;
-  final String trainName;
+  final String? trainNumber;
+  final String? trainName;
   final DateTime inspectionTime;
   final String pitLine;
   final String status;
@@ -9,8 +9,8 @@ class InspectionModel {
 
   const InspectionModel({
     required this.inspectionId,
-    required this.trainNumber,
-    required this.trainName,
+    this.trainNumber,
+    this.trainName,
     required this.inspectionTime,
     required this.pitLine,
     required this.status,
@@ -20,8 +20,8 @@ class InspectionModel {
   factory InspectionModel.fromJson(Map<String, dynamic> json) {
     return InspectionModel(
       inspectionId: json['inspection_id'] as String,
-      trainNumber: json['train_number'] as String,
-      trainName: json['train_name'] as String,
+      trainNumber: json['train_number'] as String?,
+      trainName: json['train_name'] as String?,
       inspectionTime: DateTime.parse(json['inspection_time'] as String),
       pitLine: json['pit_line'] as String,
       status: json['status'] as String,

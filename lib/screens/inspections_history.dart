@@ -58,46 +58,39 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
                 itemBuilder: (context, index) {
                   final item = items[index];
                   return AppCard(
-                    onTap: () {
-                      // Synthesize a completed/pending inspection record
-                      // so the shared details screen can render it.
-                      final synthetic = PitLineInspection(
-                        pitLineNo: item.pitLine,
-                        status: item.status == InspectionHistoryStatus.completed
-                            ? PitLineStatus.completed
-                            : PitLineStatus.mapping,
-                        trainNumber: item.trainNumber,
-                        trainName: item.trainName,
-                        startTime: const TimeOfDay(hour: 8, minute: 0),
-                        coachesDetected: 18,
-                        coachesTotal: 18,
-                        issueCount: item.issueCount,
-                        inspectionId:
-                            'INS-${item.date.substring(0, 10).replaceAll(' ', '')}-${item.trainNumber}',
-                        durationMinutes: 24,
-                        issueTally: IssueTally(
-                          missingPipe: (item.issueCount / 3).floor(),
-                          loosePipe: (item.issueCount / 3).ceil(),
-                          dirtyTank: item.issueCount -
-                              (item.issueCount / 3).floor() -
-                              (item.issueCount / 3).ceil() >
-                              0
-                              ? item.issueCount -
-                                  (item.issueCount / 3).floor() -
-                                  (item.issueCount / 3).ceil()
-                              : 0,
-                        ),
-                      );
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => InspectionDetailsScreen(
-                            inspection: synthetic,
-                            startAtCompleted:
-                                item.status == InspectionHistoryStatus.completed,
-                          ),
-                        ),
-                      );
-                    },
+                      onTap: () async {
+                        try {
+                          final detail = await _repository.getInspectionDetail(
+                            item.inspectionId,
+                          );
+                      
+                          final inspection =
+                              PitLineInspection.fromInspectionDetail(detail);
+                      
+                          if (!context.mounted) return;
+                      
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => InspectionDetailsScreen(
+                                inspection: inspection,
+                              ),
+                            ),
+                          );
+                          
+                          // Reload inspections after returning
+                          _loadInspections();
+                        } catch (e) {
+                          debugPrint('INSPECTION DETAIL ERROR: $e');
+                      
+                          if (!context.mounted) return;
+                      
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to load inspection details'),
+                            ),
+                          );
+                        }
+                      },                    
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -144,6 +137,7 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
                       ],
                     ),
                   );
+                
                 },
               ),
             ),
@@ -151,6 +145,7 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
         ),
       ),
     );
+  
   }
 
 @override

@@ -39,7 +39,7 @@ class LivePitLine {
       status: json['status'] as String,
       startedAt: json['started_at'] as String,
       defects: json['defects'] as int,
-      inspectedCoaches: json['inspected_coaches'] as int,
+      inspectedCoaches: json['coaches_detected'] as int,
       totalCoaches: json['total_coaches'] as int,
     );
   }

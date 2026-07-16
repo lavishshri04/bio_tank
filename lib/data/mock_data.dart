@@ -88,6 +88,7 @@ class MockData {
 
   static final List<InspectionHistoryItem> history = [
     const InspectionHistoryItem(
+      inspectionId: 'mock-1',
       trainNumber: '12951',
       trainName: 'Mumbai Rajdhani Express',
       date: '07 Jul 2026, 08:42 AM',
@@ -96,6 +97,7 @@ class MockData {
       issueCount: 3,
     ),
     const InspectionHistoryItem(
+      inspectionId: 'mock-2',
       trainNumber: '12002',
       trainName: 'Bhopal Shatabdi Express',
       date: '07 Jul 2026, 07:15 AM',
@@ -104,6 +106,7 @@ class MockData {
       issueCount: 1,
     ),
     const InspectionHistoryItem(
+      inspectionId: 'mock-3',
       trainNumber: '16032',
       trainName: 'Andaman Express',
       date: '06 Jul 2026, 09:50 PM',
@@ -112,6 +115,7 @@ class MockData {
       issueCount: 6,
     ),
     const InspectionHistoryItem(
+      inspectionId: 'mock-4',
       trainNumber: '12622',
       trainName: 'Tamil Nadu Express',
       date: '06 Jul 2026, 06:30 PM',
@@ -120,6 +124,7 @@ class MockData {
       issueCount: 0,
     ),
     const InspectionHistoryItem(
+      inspectionId: 'mock-5',
       trainNumber: '12910',
       trainName: 'Garib Rath Express',
       date: '06 Jul 2026, 03:12 PM',
@@ -144,6 +149,7 @@ class MockData {
 
   static final Map<String, CoachRecord> coaches = {
     'ENGINE': const CoachRecord(
+      coachId: 'ENGINE',
       coachNumber: 'ENGINE',
       coachType: 'Locomotive',
       severity: Severity.clean,
@@ -153,6 +159,7 @@ class MockData {
       aiRemarks: 'No bio-toilet system present on locomotive.',
     ),
     'B1': const CoachRecord(
+      coachId: 'B1',
       coachNumber: 'B1',
       coachType: 'AC 3-Tier',
       severity: Severity.clean,
@@ -170,6 +177,7 @@ class MockData {
       recommendedMaintenance: 'None. Schedule next routine check in 15 days.',
     ),
     'B2': const CoachRecord(
+      coachId: 'B2',
       coachNumber: 'B2',
       coachType: 'AC 3-Tier',
       severity: Severity.warning,
@@ -187,6 +195,7 @@ class MockData {
       recommendedMaintenance: 'Re-tighten front-left and rear-left pipe brackets.',
     ),
     'B3': const CoachRecord(
+      coachId: 'B3',
       coachNumber: 'B3',
       coachType: 'AC 2-Tier',
       severity: Severity.critical,
@@ -204,6 +213,7 @@ class MockData {
       recommendedMaintenance: 'Replace front-left discharge pipe immediately. Clean bio tank residue.',
     ),
     'B4': const CoachRecord(
+      coachId: 'B4',
       coachNumber: 'B4',
       coachType: 'AC 2-Tier',
       severity: Severity.critical,
@@ -221,6 +231,7 @@ class MockData {
       recommendedMaintenance: 'Replace front-right discharge pipe. Verify rear-right coupling.',
     ),
     'S1': const CoachRecord(
+      coachId: 'S1',
       coachNumber: 'S1',
       coachType: 'Sleeper',
       severity: Severity.clean,
@@ -231,6 +242,7 @@ class MockData {
       recommendedMaintenance: 'None.',
     ),
     'S2': const CoachRecord(
+      coachId: 'S2',
       coachNumber: 'S2',
       coachType: 'Sleeper',
       severity: Severity.warning,
@@ -241,6 +253,7 @@ class MockData {
       recommendedMaintenance: 'Schedule tank cleaning at next major halt.',
     ),
     'S3': const CoachRecord(
+      coachId: 'S3',
       coachNumber: 'S3',
       coachType: 'Sleeper',
       severity: Severity.clean,
@@ -251,6 +264,7 @@ class MockData {
       recommendedMaintenance: 'None.',
     ),
     'A1': const CoachRecord(
+      coachId: 'A1',
       coachNumber: 'A1',
       coachType: 'AC First Class',
       severity: Severity.clean,
@@ -261,6 +275,7 @@ class MockData {
       recommendedMaintenance: 'None.',
     ),
     'A2': const CoachRecord(
+      coachId: 'A2',
       coachNumber: 'A2',
       coachType: 'AC First Class',
       severity: Severity.warning,

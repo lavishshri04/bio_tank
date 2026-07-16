@@ -4,13 +4,17 @@ import '../models/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import 'coach_details.dart';
+import '../repositories/coach/coach_repository.dart';
+import '../models/coach/coach_list_model.dart';
 
 class CoachListScreen extends StatefulWidget {
+  final String inspectionId;
   final String trainNumber;
   final String trainName;
 
   const CoachListScreen({
     super.key,
+    required this.inspectionId,
     required this.trainNumber,
     required this.trainName,
   });
@@ -22,15 +26,21 @@ class CoachListScreen extends StatefulWidget {
 class _CoachListScreenState extends State<CoachListScreen> {
   String _query = '';
   String _filter = 'All';
+  final CoachRepository _repository = CoachRepository();
+
+  CoachListModel? _coachList;
+  bool _isLoading = true;
 
   @override
   Widget build(BuildContext context) {
-    final order = MockData.coachOrder;
-
-    final filtered = order.where((code) {
-      final coach = MockData.coaches[code]!;
-      final matchesQuery =
-          _query.isEmpty || code.toLowerCase().contains(_query.toLowerCase());
+    final coaches = (_coachList?.coaches ?? [])
+        .map((e) => CoachRecord.fromApi(e))
+        .toList();
+    
+    final filtered = coaches.where((coach) {
+      final matchesQuery = _query.isEmpty ||
+          coach.coachNumber.toLowerCase().contains(_query.toLowerCase());
+    
       final matchesFilter = switch (_filter) {
         'Defects' =>
             coach.severity == Severity.warning ||
@@ -38,6 +48,7 @@ class _CoachListScreenState extends State<CoachListScreen> {
         'Clean' => coach.severity == Severity.clean,
         _ => true,
       };
+    
       return matchesQuery && matchesFilter;
     }).toList();
 
@@ -68,21 +79,26 @@ class _CoachListScreenState extends State<CoachListScreen> {
               ),
             ),
             Expanded(
-              child: ListView.separated(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                 itemCount: filtered.length,
                 separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
-                  final code = filtered[index];
-                  final coach = MockData.coaches[code]!;
+                  final coach = filtered[index];
+                
                   return _CoachCard(
                     coach: coach,
                     onTap: () {
-                      Navigator.of(context).push(
+                      Navigator.push(
+                        context,
                         MaterialPageRoute(
                           builder: (_) => CoachDetailsScreen(
-                            coachOrder: order,
-                            initialIndex: order.indexOf(code),
+                            inspectionId: widget.inspectionId,
+                            coachId: coach.coachId,
                             trainNumber: widget.trainNumber,
                           ),
                         ),
@@ -97,6 +113,31 @@ class _CoachListScreenState extends State<CoachListScreen> {
       ),
     );
   }
+
+@override
+void initState() {
+  super.initState();
+  _loadCoaches();
+}
+
+Future<void> _loadCoaches() async {
+  try {
+    final data = await _repository.getCoachList(
+      widget.inspectionId,
+    );
+
+    setState(() {
+      _coachList = data;
+      _isLoading = false;
+    });
+  } catch (e) {
+    debugPrint('COACH LIST ERROR: $e');
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
 }
 
 class _CoachCard extends StatelessWidget {

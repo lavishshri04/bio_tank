@@ -22,29 +22,38 @@ class InspectionDetailModel {
       inspectionId: json['inspection_id'],
       status: json['status'],
       pitLine: json['pit_line'],
-      train: TrainInfo.fromJson(json['train']),
+  
       inspection: InspectionInfo.fromJson(json['inspection']),
       defectSummary: DefectSummary.fromJson(json['defect_summary']),
       mapping: MappingInfo.fromJson(json['mapping']),
+  
+      train: TrainInfo.fromJson(
+        json['mapping']['train'],
+      ),
     );
   }
 }
+
 class TrainInfo {
   final String number;
   final String name;
+  final int coachesSynchronized;
 
   const TrainInfo({
     required this.number,
     required this.name,
+    required this.coachesSynchronized,
   });
 
   factory TrainInfo.fromJson(Map<String, dynamic> json) {
     return TrainInfo(
-      number: json['number'],
-      name: json['name'],
+      number: json['number'] ?? '',
+      name: json['name'] ?? '',
+      coachesSynchronized: json['coaches_synchronized'] ?? 0,
     );
   }
 }
+
 class InspectionInfo {
   final DateTime startedAt;
   final int durationMinutes;
@@ -70,6 +79,7 @@ class InspectionInfo {
     );
   }
 }
+
 class DefectSummary {
   final int pipeNotConnected;
   final int pipeSupportAbsent;
@@ -89,6 +99,7 @@ class DefectSummary {
     );
   }
 }
+
 class MappingInfo {
   final bool completed;
   final String message;

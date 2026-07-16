@@ -16,7 +16,8 @@ class ApiEndpoints {
   // Inspections
   static const String inspections = '/inspections/';
   static const String inspectionDetail = '/inspection/';
-
+  static const String fetchTrain = '/inspections/';
+  
   // Coach
   static const String coachList = '/inspection/';
   static const String coachDetail = '/inspection/';

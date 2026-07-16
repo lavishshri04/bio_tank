@@ -3,17 +3,17 @@ import '../models/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import 'coach_list.dart';
+import '../repositories/inspection/inspection_repository.dart';
+import '../models/inspection/inspection_detail_model.dart';
 
 /// Screen 3. Also reused when opening a completed inspection from history,
 /// in which case [startAtCompleted] renders the finished state directly.
 class InspectionDetailsScreen extends StatefulWidget {
   final PitLineInspection inspection;
-  final bool startAtCompleted;
 
   const InspectionDetailsScreen({
     super.key,
     required this.inspection,
-    this.startAtCompleted = false,
   });
 
   @override
@@ -21,69 +21,113 @@ class InspectionDetailsScreen extends StatefulWidget {
       _InspectionDetailsScreenState();
 }
 
-enum _Stage { scanned, fetching, fetched, mapping, mapped }
+enum _Stage { scanned, fetching, mapped }
 
 class _InspectionDetailsScreenState extends State<InspectionDetailsScreen> {
   late _Stage _stage;
   final _trainController = TextEditingController();
-  String? _fetchedTrainNumber;
-  double _mappingProgress = 0;
+  InspectionDetailModel? _detail;
 
-  static const Map<String, String> _trainLookup = {
-    '12951': 'Mumbai Rajdhani Express',
-    '12002': 'Bhopal Shatabdi Express',
-    '12622': 'Tamil Nadu Express',
-  };
+final InspectionRepository _repository = InspectionRepository();
+
+bool _loading = false;
+String? _mappedTrainNumber;
+String? _mappedTrainName;
+int? _coachesSynchronized;
+
 
   @override
   void initState() {
     super.initState();
-    _stage = widget.startAtCompleted
+  
+    _stage = widget.inspection.status == PitLineStatus.completed
         ? _Stage.mapped
-        : (widget.inspection.trainNumber != null
-            ? _Stage.fetched
-            : _Stage.scanned);
-    if (widget.inspection.trainNumber != null) {
-      _fetchedTrainNumber = widget.inspection.trainNumber;
-      _trainController.text = widget.inspection.trainNumber!;
-    }
+        : _Stage.scanned;
+      _loadInspectionDetail();
   }
-
   @override
   void dispose() {
     _trainController.dispose();
     super.dispose();
   }
 
-  void _fetchTrain() async {
-    if (_trainController.text.trim().isEmpty) return;
-    setState(() => _stage = _Stage.fetching);
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() {
-      _fetchedTrainNumber = _trainController.text.trim();
-      _stage = _Stage.fetched;
-    });
+Future<void> _fetchTrain() async {
+  final trainNumber = _trainController.text.trim();
+
+  if (trainNumber.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please enter train number'),
+      ),
+    );
+    return;
   }
 
-  void _startMapping() async {
-    setState(() {
-      _stage = _Stage.mapping;
-      _mappingProgress = 0;
-    });
-    for (int i = 1; i <= 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 180));
+  setState(() {
+    _loading = true;
+  });
+
+  try {
+      final response = await _repository.fetchTrain(
+        widget.inspection.inspectionId,
+        trainNumber,
+      );
+      
       if (!mounted) return;
-      setState(() => _mappingProgress = i / 10);
-    }
+      
+      setState(() {
+        _mappedTrainNumber = response.trainNumber;
+        _mappedTrainName = response.trainName;
+        _coachesSynchronized = response.coachesSynchronized;
+      
+        _stage = _Stage.mapped;
+      }
+    );
+  } catch (e) {
     if (!mounted) return;
-    setState(() => _stage = _Stage.mapped);
-  }
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(e.toString()),
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+}
+Future<void> _loadInspectionDetail() async {
+  try {
+    final detail = await _repository.getInspectionDetail(
+      widget.inspection.inspectionId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _detail = detail;
+
+      // If this is already a completed inspection,
+      // populate the mapping card.
+      if (widget.inspection.status == PitLineStatus.completed) {
+        _mappedTrainNumber = detail.train.number;
+        _mappedTrainName = detail.train.name;
+        _coachesSynchronized = detail.train.coachesSynchronized;
+      }
+    });
+  } catch (e) {
+    debugPrint('Failed to load inspection detail: $e');
+  }
+}
+ 
   @override
   Widget build(BuildContext context) {
     final i = widget.inspection;
-    final trainName = _trainLookup[_fetchedTrainNumber] ?? 'Regional Passenger Service';
+    final isCompleted =
+          widget.inspection.status == PitLineStatus.completed;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -169,8 +213,9 @@ class _InspectionDetailsScreenState extends State<InspectionDetailsScreen> {
             const SizedBox(height: AppSpacing.xxl),
 
             // ---- Train number entry / fetch / mapping flow ----
-            if (_stage == _Stage.scanned || _stage == _Stage.fetching) ...[
-              const SectionHeader(title: 'Train Number'),
+            if (!isCompleted &&
+                (_stage == _Stage.scanned || _stage == _Stage.fetching)) ...[
+                    const SectionHeader(title: 'Train Number'),
               const SizedBox(height: AppSpacing.md),
               AppCard(
                 child: Column(
@@ -192,8 +237,8 @@ class _InspectionDetailsScreenState extends State<InspectionDetailsScreen> {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     ElevatedButton.icon(
-                      onPressed: _stage == _Stage.fetching ? null : _fetchTrain,
-                      icon: _stage == _Stage.fetching
+                      onPressed: _loading ? null : _fetchTrain,
+                      icon: _loading
                           ? const SizedBox(
                               width: 16,
                               height: 16,
@@ -201,108 +246,88 @@ class _InspectionDetailsScreenState extends State<InspectionDetailsScreen> {
                                   strokeWidth: 2, color: Colors.white),
                             )
                           : const Icon(Icons.search_rounded, size: 18),
-                      label: Text(_stage == _Stage.fetching
-                          ? 'Fetching Train Details...'
-                          : 'Fetch Train Details'),
+                      label: Text(
+                        _loading
+                            ? 'Fetching Train Details...'
+                            : 'Fetch Train Details',
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-
-            if (_stage == _Stage.fetched) ...[
-              const SectionHeader(title: 'Train Details'),
+            ],          
+          
+            if (_stage == _Stage.mapped) ...[
+              const SectionHeader(title: 'Mapping Completed'),
               const SizedBox(height: AppSpacing.md),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _KeyValueRow(label: 'Train Number', value: _fetchedTrainNumber ?? '-'),
-                    const SizedBox(height: 12),
-                    _KeyValueRow(label: 'Train Name', value: trainName),
-                    const SizedBox(height: 12),
-                    _KeyValueRow(label: 'Coach Count', value: '${i.coachesTotal}'),
-                    const SizedBox(height: AppSpacing.lg),
-                    ElevatedButton.icon(
-                      onPressed: _startMapping,
-                      icon: const Icon(Icons.map_rounded, size: 18),
-                      label: const Text('Confirm & Start Mapping'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            if (_stage == _Stage.mapping) ...[
-              const SectionHeader(title: 'Mapping Coaches'),
-              const SizedBox(height: AppSpacing.md),
+            
               AppCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: [
-                        const Icon(Icons.autorenew_rounded,
-                            color: AppColors.primary, size: 20),
-                        const SizedBox(width: 10),
+                      children: const [
+                        Icon(
+                          Icons.check_circle,
+                          color: AppColors.success,
+                        ),
+                        SizedBox(width: 8),
                         Text(
-                          'Mapping coach ${(_mappingProgress * i.coachesTotal).round()} of ${i.coachesTotal}',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          'Train mapped successfully.',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.success,
+                          ),
                         ),
                       ],
                     ),
+            
+                    const SizedBox(height: 20),
+            
+                    _KeyValueRow(
+                      label: 'Train Number',
+                      value: _mappedTrainNumber ?? '-',
+                    ),
+            
+                    const SizedBox(height: 12),
+            
+                    _KeyValueRow(
+                      label: 'Train Name',
+                      value: _mappedTrainName ?? '-',
+                    ),
+            
+                    const SizedBox(height: 12),
+            
+                    _KeyValueRow(
+                      label: 'Coaches Synchronized',
+                      value: '${_coachesSynchronized ?? 0}',
+                    ),
+            
                     const SizedBox(height: AppSpacing.lg),
-                    AppProgressBar(value: _mappingProgress),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Matching AI-detected coach order with train composition...',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            if (_stage == _Stage.mapped) ...[
-              AppCard(
-                color: AppColors.successTint,
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle_rounded,
-                        color: AppColors.success),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Mapping completed successfully. Coach composition verified against train ${_fetchedTrainNumber ?? i.trainNumber ?? ''}.',
-                        style: const TextStyle(
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
+            
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.list_alt_rounded),
+                        label: const Text('View Coach List'),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CoachListScreen(
+                                inspectionId: widget.inspection.inspectionId,
+                                trainNumber: _mappedTrainNumber ?? '',
+                                trainName: _mappedTrainName ?? '',
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => CoachListScreen(
-                          trainNumber: _fetchedTrainNumber ?? i.trainNumber ?? '-',
-                          trainName: trainName,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.list_alt_rounded, size: 18),
-                  label: const Text('View Coach List'),
-                ),
-              ),
-            ],
+            ],         
           ],
         ),
       ),
