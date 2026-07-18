@@ -55,7 +55,10 @@ class _CoachListScreenState extends State<CoachListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('${widget.trainNumber} · Coach List'),
+        title: Text(
+          '${widget.trainNumber} · Coach List',
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -154,43 +157,45 @@ class _CoachCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: s.tint,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      coach.coachNumber == 'ENGINE' ? 'E' : coach.coachNumber,
-                      style: TextStyle(
-                        color: s.color,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                      ),
-                    ),
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: s.tint,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  coach.coachNumber == 'ENGINE' ? 'E' : coach.coachNumber,
+                  style: TextStyle(
+                    color: s.color,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(coach.coachNumber,
-                          style: Theme.of(context).textTheme.titleMedium),
-                      Text(
-                        coach.coachNumber == 'ENGINE'
-                            ? 'Locomotive • No Bio-Toilet'
-                            : coach.coachType,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      coach.coachNumber,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      coach.coachNumber == 'ENGINE'
+                          ? 'Locomotive • No Bio-Toilet'
+                          : coach.coachType,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               StatusChip(
                 label: coach.coachNumber == 'ENGINE' ? 'N/A' : s.label,
                 color: coach.coachNumber == 'ENGINE'
@@ -199,7 +204,8 @@ class _CoachCard extends StatelessWidget {
                 background: coach.coachNumber == 'ENGINE'
                     ? Colors.grey.shade200
                     : s.tint,
-              ),            ],
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.md),
           Row(

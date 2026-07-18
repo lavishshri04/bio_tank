@@ -108,8 +108,15 @@ class SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleLarge),
-        if (actionLabel != null)
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (actionLabel != null) ...[
+          const SizedBox(width: AppSpacing.sm),
           GestureDetector(
             onTap: onAction,
             child: Text(
@@ -121,6 +128,7 @@ class SectionHeader extends StatelessWidget {
               ),
             ),
           ),
+        ],
       ],
     );
   }
@@ -159,6 +167,8 @@ class StatTile extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -166,7 +176,12 @@ class StatTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ],
       ),
     );

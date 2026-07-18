@@ -238,10 +238,14 @@ class _RowStat extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium,
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             value,
             style: const TextStyle(
@@ -254,4 +258,3 @@ class _RowStat extends StatelessWidget {
     );
     }
 }
-

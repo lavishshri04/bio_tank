@@ -27,7 +27,8 @@ class _SplashScreenState extends State<SplashScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
-          child: Column(
+          child: SingleChildScrollView(
+            child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
@@ -77,6 +78,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),

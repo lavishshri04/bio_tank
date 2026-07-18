@@ -24,6 +24,12 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
   
   InspectionListModel? _inspectionList;
   bool _isLoading = true;
+
+  // Tracks the inspection currently being opened, so the tapped card can
+  // show a spinner instead of appearing unresponsive while the detail
+  // request is in flight, and to prevent duplicate taps firing more than
+  // one request at once.
+  String? _openingId;
   
   @override
   Widget build(BuildContext context) {
@@ -57,8 +63,13 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
                 separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final item = items[index];
+                  final isOpening = _openingId == item.inspectionId;
+
                   return AppCard(
-                      onTap: () async {
+                      onTap: isOpening
+                          ? null
+                          : () async {
+                        setState(() => _openingId = item.inspectionId);
                         try {
                           final detail = await _repository.getInspectionDetail(
                             item.inspectionId,
@@ -80,15 +91,23 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
                           // Reload inspections after returning
                           _loadInspections();
                         } catch (e) {
+                          // Full error printed for diagnosis; the snackbar
+                          // stays generic for the user.
                           debugPrint('INSPECTION DETAIL ERROR: $e');
                       
                           if (!context.mounted) return;
                       
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to load inspection details'),
+                            SnackBar(
+                              content: Text(
+                                'Failed to load inspection details: $e',
+                              ),
                             ),
                           );
+                        } finally {
+                          if (context.mounted) {
+                            setState(() => _openingId = null);
+                          }
                         }
                       },                    
                     child: Column(
@@ -101,18 +120,30 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(item.trainNumber,
-                                      style: Theme.of(context).textTheme.titleMedium),
-                                  Text(item.trainName,
-                                      style: Theme.of(context).textTheme.bodyMedium),
+                                  Text(
+                                    item.trainNumber,
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    item.trainName,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ],
                               ),
                             ),
-                            StatusChip(
-                              label: item.status.label,
-                              color: item.status.color,
-                              background: item.status.tint,
-                            ),
+                            isOpening
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : StatusChip(
+                                    label: item.status.label,
+                                    color: item.status.color,
+                                    background: item.status.tint,
+                                  ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -120,9 +151,13 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
                         const SizedBox(height: AppSpacing.md),
                         Row(
                           children: [
-                            _MetaChip(icon: Icons.calendar_today_rounded, label: item.date),
+                            Flexible(
+                              child: _MetaChip(icon: Icons.calendar_today_rounded, label: item.date),
+                            ),
                             const SizedBox(width: 12),
-                            _MetaChip(icon: Icons.alt_route_rounded, label: item.pitLine),
+                            Flexible(
+                              child: _MetaChip(icon: Icons.alt_route_rounded, label: item.pitLine),
+                            ),
                             const Spacer(),
                             Icon(Icons.report_problem_rounded,
                                 size: 15,
@@ -184,7 +219,13 @@ class _MetaChip extends StatelessWidget {
       children: [
         Icon(icon, size: 13, color: AppColors.textTertiary),
         const SizedBox(width: 4),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Flexible(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }

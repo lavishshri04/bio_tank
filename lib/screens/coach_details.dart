@@ -127,18 +127,24 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
         // Header
         Row(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(coach.coach.number,
-                    style: Theme.of(context).textTheme.headlineSmall),
-                Text(
-                  '${coach.coach.type} - Train ${widget.trainNumber}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    coach.coach.number,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '${coach.coach.type} - Train ${widget.trainNumber}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: AppSpacing.sm),
             StatusChip(
               label: _displayStatus(coach.coach.status),
               color: status.color,
@@ -318,12 +324,18 @@ class _InfoRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: valueColor ?? AppColors.textPrimary,
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? AppColors.textPrimary,
+            ),
           ),
         ),
       ],

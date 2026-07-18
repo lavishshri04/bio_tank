@@ -147,8 +147,14 @@ Future<void> _loadInspectionDetail() async {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Inspection Status',
-                          style: Theme.of(context).textTheme.titleMedium),
+                      Expanded(
+                        child: Text(
+                          'Inspection Status',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
                       StatusChip(
                         label: i.status.label,
                         color: i.status.color,

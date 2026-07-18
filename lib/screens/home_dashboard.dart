@@ -345,23 +345,29 @@ class _ActivePitLineCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: status.tint,
-                      borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: status.tint,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(status.icon, size: 18, color: status.color),
                     ),
-                    child: Icon(status.icon, size: 18, color: status.color),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    inspection.pitLineNo,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        inspection.pitLineNo,
+                        style: Theme.of(context).textTheme.titleMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: AppSpacing.sm),
               StatusChip(
                 label: status.label,
                 color: status.color,
@@ -449,10 +455,16 @@ class _InfoBit extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall,
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: 2),
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
