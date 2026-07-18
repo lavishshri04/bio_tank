@@ -36,23 +36,14 @@ class ReportRepository {
 Future<File> exportReport(String type) async {
   print('ReportRepository.exportReport() called');
 
-  if (!Platform.isWindows) {
-    throw UnsupportedError(
-      'Saving to Downloads is currently implemented only for Windows.',
-    );
+  final saveDir = await _resolveSaveDirectory();
+
+  if (!saveDir.existsSync()) {
+    saveDir.createSync(recursive: true);
   }
 
-  final downloads = Directory(
-    '${Platform.environment['USERPROFILE']}\\Downloads',
-  );
-
-  if (!downloads.existsSync()) {
-    downloads.createSync(recursive: true);
-  }
-
-  final file = File(
-    '${downloads.path}\\${type}_report.pdf',
-  );
+  final separator = Platform.isWindows ? '\\' : '/';
+  final file = File('${saveDir.path}$separator${type}_report.pdf');
 
   print('Downloading to: ${file.path}');
 
@@ -67,5 +58,17 @@ Future<File> exportReport(String type) async {
   print('Download finished.');
 
   return file;
+}
+
+Future<Directory> _resolveSaveDirectory() async {
+  if (Platform.isWindows) {
+    return Directory('${Platform.environment['USERPROFILE']}\\Downloads');
+  }
+
+  // Android/iOS: there's no public "Downloads" folder Flutter can write to
+  // without extra storage permissions, so use the app's own documents
+  // directory instead. Files can still be opened/shared from here via
+  // open_filex / share_plus.
+  return getApplicationDocumentsDirectory();
 }
 }

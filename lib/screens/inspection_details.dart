@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
@@ -157,7 +158,19 @@ Future<void> _loadInspectionDetail() async {
                     ],
                   ),
                   const Divider(height: 28),
-                  _KeyValueRow(label: 'Inspection ID', value: i.inspectionId),
+                  _KeyValueRow(
+                    label: 'Inspection ID',
+                    value: i.inspectionId,
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: i.inspectionId));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Inspection ID copied'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 12),
                   _KeyValueRow(label: 'Pit Line', value: i.pitLineNo),
                   const SizedBox(height: 12),
@@ -340,21 +353,37 @@ class _KeyValueRow extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
-  const _KeyValueRow({required this.label, required this.value, this.valueColor});
+  final VoidCallback? onTap;
+  const _KeyValueRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final valueText = Text(
+      value,
+      textAlign: TextAlign.right,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: valueColor ?? AppColors.textPrimary,
+      ),
+    );
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: valueColor ?? AppColors.textPrimary,
-          ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: onTap == null
+              ? valueText
+              : GestureDetector(onTap: onTap, child: valueText),
         ),
       ],
     );

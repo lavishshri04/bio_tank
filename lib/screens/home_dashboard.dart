@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../data/mock_data.dart';
@@ -26,6 +28,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
   DashboardStatusModel? _dashboardStatus;
   LivePitLinesModel? _livePitLines;
   RecentActivityModel? _recentActivity;
+
+  Timer? _pollTimer;
+  static const _pollInterval = Duration(seconds: 5);
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +63,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
+        child: RefreshIndicator(
+          onRefresh: _refreshAll,
+          child: ListView(
           padding: kScreenPadding,
           children: [
             Text(today, style: Theme.of(context).textTheme.bodyMedium),
@@ -117,13 +124,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
             const SizedBox(height: AppSpacing.xxl),
             const SectionHeader(title: "Today's Summary"),
             const SizedBox(height: AppSpacing.md),
-            GridView.count(
-              crossAxisCount: 2,
+            GridView(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: AppSpacing.md,
-              crossAxisSpacing: AppSpacing.md,
-              childAspectRatio: 1.7,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: AppSpacing.md,
+                crossAxisSpacing: AppSpacing.md,
+                // Fixed height per card instead of an aspect ratio, so the
+                // content (icon + value + label) always fits regardless of
+                // screen width or text scale factor.
+                mainAxisExtent: 120,
+              ),
               children:  [
                 StatTile(
                   label: 'Trains',
@@ -170,26 +182,44 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ),
 
           ],
+          ),
         ),
       ),
     );
   }
 
   @override
- @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  _loadDashboardSummary();
-  _loadDashboardStatus();
-  _loadLivePitLines();
-  _loadRecentActivity();
-}
+    _refreshAll();
+
+    // Live pit-line data (e.g. a train number resolving from "Unknown" to
+    // an actual number) can change on the backend at any time, so poll
+    // periodically instead of only fetching once on screen load.
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _refreshAll());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshAll() async {
+    await Future.wait([
+      _loadDashboardSummary(),
+      _loadDashboardStatus(),
+      _loadLivePitLines(),
+      _loadRecentActivity(),
+    ]);
+  }
 
 Future<void> _loadDashboardSummary() async {
   try {
     final summary = await _repository.getDashboardSummary();
 
+    if (!mounted) return;
     setState(() {
       _dashboardSummary = summary;
     });
@@ -204,6 +234,7 @@ Future<void> _loadDashboardStatus() async {
   try {
     final status = await _repository.getDashboardStatus();
 
+    if (!mounted) return;
     setState(() {
       _dashboardStatus = status;
     });
@@ -218,6 +249,7 @@ Future<void> _loadLivePitLines() async {
   try {
     final pitLines = await _repository.getLivePitLines();
 
+    if (!mounted) return;
     setState(() {
       _livePitLines = pitLines;
     });
@@ -231,6 +263,7 @@ Future<void> _loadRecentActivity() async {
   try {
     final activity = await _repository.getRecentActivity();
 
+    if (!mounted) return;
     setState(() {
       _recentActivity = activity;
     });
