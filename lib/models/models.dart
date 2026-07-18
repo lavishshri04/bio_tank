@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-import 'package:flutter/material.dart';
 import 'dashboard/live_pitline_model.dart';
 import 'package:intl/intl.dart';
 import 'inspection/inspection_model.dart';
@@ -175,7 +174,7 @@ class PitLineInspection {
       coachesDetected: api.inspectedCoaches,
       coachesTotal: api.totalCoaches,
       issueCount: api.defects,
-      inspectionId: '',
+      inspectionId: api.inspectionId,
       durationMinutes: 0,
     );
   }

@@ -48,7 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 28),
                   const _StatusLine(label: 'AI Inference Engine', value: 'Online', good: true),
                   const SizedBox(height: 12),
-                  const _StatusLine(label: 'Camera Network', value: 'Online', good: true),
+                  const _StatusLine(label: 'Camera Network', value: 'ofline', good: true),
                   const SizedBox(height: 12),
                   const _StatusLine(label: 'Backend Connection', value: 'moke data', good: true),
                 ],

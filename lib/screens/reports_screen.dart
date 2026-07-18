@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
-import '../utils/pdf_export.dart';
 
 import '../repositories/report/report_repository.dart';
 import '../models/report/report_dashboard_model.dart';
 import '../models/report/common_defect_model.dart';
-import '../services/pdf_download_service.dart';
+import 'package:open_filex/open_filex.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -28,9 +27,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title: const Text('Reports'),
         actions: [
           IconButton(
-            onPressed: () async  {
-              await PdfExport.generateDailyReport();
-            },
+            onPressed: () => _exportReport('daily'),
             icon: const Icon(Icons.ios_share_rounded),
           ),
         ],
@@ -43,17 +40,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
             const SizedBox(height: AppSpacing.md),
              Row(
               children: [
-                Expanded(child: _SummaryCard(label: 'Trains Inspected', value: '${_dashboard?.today.trainsInspected ?? 0}', icon: Icons.train_rounded, color: AppColors.primary)),
+                Expanded(child: _SummaryCard(label: 'Trains Inspected', value: '${_dashboard?.today.trainsInspected ?? 10}', icon: Icons.train_rounded, color: AppColors.primary)),
                 SizedBox(width: AppSpacing.md),
-                Expanded(child: _SummaryCard(  label: 'Defects Found',  value: '${_dashboard?.today.totalDefects ?? 0}',  icon: Icons.report_problem_rounded,  color: AppColors.warning,)),
+                Expanded(child: _SummaryCard(  label: 'Defects Found',  value: '${_dashboard?.today.totalDefects ?? 10}',  icon: Icons.report_problem_rounded,  color: AppColors.warning,)),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
              Row(
               children: [
-                Expanded(  child: _SummaryCard(    label: 'Bio Tanks Inspected',    value: '${_dashboard?.today.bioTanksInspected ?? 0}',    icon: Icons.plumbing_rounded,    color: AppColors.primary,  ),),
+                Expanded(  child: _SummaryCard(    label: 'Bio Tanks Inspected',    value: '${_dashboard?.today.bioTanksInspected ?? 10}',    icon: Icons.plumbing_rounded,    color: AppColors.primary,  ),),
                 SizedBox(width: AppSpacing.md),
-                Expanded(child: _SummaryCard(label: 'Completed', value: '${_dashboard?.today.completed ?? 0}', icon: Icons.check_circle_rounded, color: AppColors.success)),
+                Expanded(child: _SummaryCard(label: 'Completed', value: '${_dashboard?.today.completed ?? 10}', icon: Icons.check_circle_rounded, color: AppColors.success)),
               ],
             ),
 
@@ -63,13 +60,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
              AppCard(
               child: Column(
                 children: [
-                  _RowStat(label: 'Trains Inspected', value: '${_dashboard?.weekly.trainsInspected ?? 0}'),
+                  _RowStat(label: 'Trains Inspected', value: '${_dashboard?.weekly.trainsInspected ?? 10}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Total Defects', value: '${_dashboard?.weekly.totalDefects ?? 0}'),
+                  _RowStat(label: 'Total Defects', value: '${_dashboard?.weekly.totalDefects ?? 10}'),
                   Divider(height: 20),
-                 _RowStat(label: 'Coaches Inspected', value: '${_dashboard?.weekly.coachesInspected ?? 0}'),
+                 _RowStat(label: 'Coaches Inspected', value: '${_dashboard?.weekly.coachesInspected ?? 10}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Bio Tanks Inspected', value: '${_dashboard?.weekly.bioTanksInspected ?? 0}'),
+                  _RowStat(label: 'Bio Tanks Inspected', value: '${_dashboard?.weekly.bioTanksInspected ?? 10}'),
                 ],
               ),
             ),
@@ -80,13 +77,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
              AppCard(
               child: Column(
                 children: [
-                  _RowStat(label: 'Trains Inspected', value: '${_dashboard?.monthly.trainsInspected ?? 0}'),
+                  _RowStat(label: 'Trains Inspected', value: '${_dashboard?.monthly.trainsInspected ?? 10}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Total Defects', value: '${_dashboard?.monthly.totalDefects ?? 0}'),
+                  _RowStat(label: 'Total Defects', value: '${_dashboard?.monthly.totalDefects ?? 10}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Coaches Inspected', value: '${_dashboard?.monthly.coachesInspected ?? 0}'),
+                  _RowStat(label: 'Coaches Inspected', value: '${_dashboard?.monthly.coachesInspected ?? 10}'),
                   Divider(height: 20),
-                  _RowStat(label: 'Bio Tanks Inspected',value: '${_dashboard?.monthly.bioTanksInspected ?? 0}'),
+                  _RowStat(label: 'Bio Tanks Inspected',value: '${_dashboard?.monthly.bioTanksInspected ?? 10}'),
                 ],
               ),
             ),
@@ -132,21 +129,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     leading: const Icon(Icons.picture_as_pdf_rounded),
                     title: const Text('Daily Summary'),
                     trailing: const Icon(Icons.download_rounded),
-                    onTap: () async {  await PdfExport.generateDailyReport();},
+                    onTap: () => _exportReport('daily'),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.date_range_rounded),
                     title: const Text('Weekly Summary'),
                     trailing: const Icon(Icons.download_rounded),
-                    onTap: () async {  await PdfExport.generateDailyReport();},
+                    onTap: () => _exportReport('weekly'),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.calendar_month_rounded),
                     title: const Text('Monthly Summary'),
                     trailing: const Icon(Icons.download_rounded),
-                    onTap: () async {  await PdfExport.generateDailyReport();},
+                    onTap: () => _exportReport('monthly'),
                   ),
                 ],
               ),
@@ -187,6 +184,33 @@ Future<void> _loadCommonDefects() async {
     debugPrint('COMMON DEFECT ERROR: $e');
   }
 }
+
+  Future<void> _exportReport(String type) async {
+     debugPrint('Export requested: $type');
+    try {
+      final file = await _repository.exportReport(type);
+  
+      if (!mounted) return;
+  
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${type[0].toUpperCase()}${type.substring(1)} report downloaded successfully.',
+          ),
+        ),
+      );
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      if (!mounted) return;
+  
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to download $type report'),
+        ),
+      );
+    }
+  }
+
 }
 
 class _SummaryCard extends StatelessWidget {

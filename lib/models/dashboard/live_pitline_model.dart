@@ -21,6 +21,8 @@ class LivePitLine {
   final int defects;
   final int inspectedCoaches;
   final int totalCoaches;
+  final String inspectionId;
+
 
   const LivePitLine({
     required this.pitLine,
@@ -30,16 +32,18 @@ class LivePitLine {
     required this.defects,
     required this.inspectedCoaches,
     required this.totalCoaches,
+    required this.inspectionId,
   });
 
   factory LivePitLine.fromJson(Map<String, dynamic> json) {
     return LivePitLine(
+      inspectionId: json['inspection_id'] as String,
       pitLine: json['pit_line'] as String,
       trainNumber: json['train_number'] as String?,
       status: json['status'] as String,
       startedAt: json['started_at'] as String,
       defects: json['defects'] as int,
-      inspectedCoaches: json['coaches_detected'] as int,
+      inspectedCoaches: (json['inspected_coaches'] ?? 0) as int,
       totalCoaches: json['total_coaches'] as int,
     );
   }

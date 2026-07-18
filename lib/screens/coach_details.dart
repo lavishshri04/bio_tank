@@ -301,20 +301,6 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.lg),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Inspection report exported as PDF')),
-              );
-            },
-            icon: const Icon(Icons.ios_share_rounded, size: 18),
-            label: const Text('Export Inspection Report'),
-          ),
-        ),
       ],
     );
   }

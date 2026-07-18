@@ -125,9 +125,10 @@ Future<void> _loadInspectionDetail() async {
  
   @override
   Widget build(BuildContext context) {
-    final i = widget.inspection;
-    final isCompleted =
-          widget.inspection.status == PitLineStatus.completed;
+      final i = _detail != null
+          ? PitLineInspection.fromInspectionDetail(_detail!)
+          : widget.inspection;
+      final isCompleted = i.status == PitLineStatus.completed;
 
     return Scaffold(
       backgroundColor: AppColors.background,

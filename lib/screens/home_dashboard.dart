@@ -36,7 +36,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         MockData.activeInspections;
     
     final hasActive = activeInspections.isNotEmpty;
-
+    final activities = _recentActivity?.activities ?? [];
     final today = DateFormat('EEE, d MMM yyyy').format(DateTime.now());
 
     return Scaffold(
@@ -123,7 +123,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: AppSpacing.md,
               crossAxisSpacing: AppSpacing.md,
-              childAspectRatio: 2.2,
+              childAspectRatio: 1.7,
               children:  [
                 StatTile(
                   label: 'Trains',
@@ -159,14 +159,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Column(
                 children: [
-                  for (int i = 0; i < MockData.recentActivity.length; i++) ...[
-                    _ActivityTile(event: MockData.recentActivity[i]),
-                    if (i != MockData.recentActivity.length - 1)
+                  
+                  for (int i = 0; i < activities.length; i++) ...[
+                    _ActivityTile(event: activities[i]),
+                    if (i != activities.length - 1)
                       const Divider(indent: 52, height: 1),
                   ],
                 ],
               ),
             ),
+
           ],
         ),
       ),
@@ -430,39 +432,56 @@ class _InfoBit extends StatelessWidget {
 }
 
 class _ActivityTile extends StatelessWidget {
-  final ActivityEvent event;
+  final ActivityItem event;
+
   const _ActivityTile({required this.event});
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: event.color.withOpacity(0.1),
-              shape: BoxShape.circle,
+    @override
+    Widget build(BuildContext context) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: AppColors.successTint,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                size: 16,
+                color: AppColors.success,
+              ),
             ),
-            child: Icon(event.icon, size: 16, color: event.color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(event.title,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
-                Text(event.subtitle, style: Theme.of(context).textTheme.bodyMedium),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                        event.trainNumber == null
+                            ? 'Awaiting Train Number'
+                            : 'Train ${event.trainNumber}',
+                        style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${event.pitLine} • ${event.status}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(event.time, style: Theme.of(context).textTheme.labelSmall),
-        ],
-      ),
-    );
-  }
+            Text(
+              DateFormat('hh:mm a').format(event.timestamp.toLocal()),
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ],
+        ),
+      );
+    }
 }
