@@ -34,8 +34,19 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final items = (_inspectionList?.results ?? [])
-    .map((e) => InspectionHistoryItem.fromApi(e))
-    .toList();
+        .map((e) => InspectionHistoryItem.fromApi(e))
+        .where((item) {
+          final matchesFilter =
+              _filter == 'All' || item.status.label == _filter;
+
+          final query = _query.trim().toLowerCase();
+          final matchesQuery = query.isEmpty ||
+              item.trainNumber.toLowerCase().contains(query) ||
+              item.trainName.toLowerCase().contains(query);
+
+          return matchesFilter && matchesQuery;
+        })
+        .toList();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Inspections')),
@@ -57,7 +68,16 @@ class _InspectionsHistoryScreenState extends State<InspectionsHistoryScreen> {
                   ? const Center(
                       child: CircularProgressIndicator(),
                     )
-                  : ListView.separated(
+                  : items.isEmpty
+                      ? const Center(
+                          child: EmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: 'No Inspections Found',
+                            subtitle:
+                                'Try a different search term or filter.',
+                          ),
+                        )
+                      : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                 itemCount: items.length,
                 separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),

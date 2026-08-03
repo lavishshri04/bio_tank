@@ -4,6 +4,7 @@ import '../models/coach/coach_detail_model.dart';
 import '../repositories/coach/coach_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
+import 'inspection_images.dart';
 
 class CoachDetailsScreen extends StatefulWidget {
   final String inspectionId;
@@ -59,6 +60,24 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
         _loading = false;
       });
     }
+  }
+
+  // TODO(backend): replace with the real image count from the API once
+  // the inspection images endpoint is available. Derived deterministically
+  // from the coach id for now so the empty state can also be previewed.
+  int get _inspectionImageCount => widget.coachId.hashCode.abs() % 13;
+
+  void _openInspectionImages(CoachDetailModel coach) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InspectionImagesScreen(
+          coachNumber: coach.coach.number,
+          trainNumber: widget.trainNumber,
+          imageCount: _inspectionImageCount,
+        ),
+      ),
+    );
   }
 
   void _openCoach(String coachId) {
@@ -222,6 +241,14 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
         const SizedBox(height: AppSpacing.md),
         AppCard(child: _HealthDiagram(healthDiagram: coach.healthDiagram)),
 
+        const SizedBox(height: AppSpacing.xxl),
+        const SectionHeader(title: 'Inspection Images'),
+        const SizedBox(height: AppSpacing.md),
+        _InspectionImagesCard(
+          imageCount: _inspectionImageCount,
+          onTap: () => _openInspectionImages(coach),
+        ),
+
         if (coach.findings.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           const SectionHeader(title: 'Inspection Findings'),
@@ -308,6 +335,81 @@ class _CoachDetailsScreenState extends State<CoachDetailsScreen> {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _InspectionImagesCard extends StatelessWidget {
+  final int imageCount;
+  final VoidCallback onTap;
+
+  const _InspectionImagesCard({
+    required this.imageCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImages = imageCount > 0;
+
+    return AppCard(
+      onTap: hasImages ? onTap : null,
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primaryTint,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.photo_library_rounded,
+              color: AppColors.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Inspection Images',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasImages
+                      ? '$imageCount Images Available'
+                      : 'No inspection images available.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          if (hasImages) ...[
+            const SizedBox(width: AppSpacing.sm),
+            TextButton(
+              onPressed: onTap,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('View Images'),
+                  Icon(Icons.chevron_right_rounded, size: 18),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
